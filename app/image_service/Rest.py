@@ -21,7 +21,7 @@ def generate_random_name(length):
 
 @app.route('/')
 def hello():
-    return jsonify('Hello!')
+    return jsonify('Hello!'), 200
 
 
 @app.route('/image', methods=['GET'])
@@ -31,7 +31,7 @@ def get_images_info():
     for i in os.listdir('images'):
         res[i] = [time.ctime(os.path.getmtime(os.path.abspath(os.path.join('images', i)))),
                   str(os.stat(os.path.abspath(os.path.join('images', i))).st_size / 1024) + ' kilobytes']
-    return jsonify(res)
+    return jsonify(res), 200
 
 
 @app.route('/image', methods=['POST'])
@@ -46,9 +46,9 @@ def base64_upload():
         im = Image.open(BytesIO(base64.b64decode(data))).convert('RGB')
         filename = generate_random_name(3) + '.jpg'
         im.save(os.path.join('images', filename), 'JPEG')
-        return jsonify(f"file {filename} added to 'images' folder")
+        return jsonify(f"file {filename} added to 'images' folder"), 201
     except Exception:
-        return jsonify('Incorrect JSON or base64 string.')
+        return jsonify('Incorrect JSON or base64 string.'), 400
 
 
 @app.route('/image', methods=['DELETE'])
@@ -59,9 +59,9 @@ def delete_image():
     try:
         filename = request.args.get('filename')
         os.remove(os.path.join('images', filename))
-        return jsonify(f" file {filename} has been deleted")
+        return jsonify(f" file {filename} has been deleted"), 200
     except Exception:
-        return jsonify('Incorrect filename in args.')
+        return jsonify('Incorrect filename in args.'), 404
 
 
 @app.route('/images/<filename>', methods=['GET'])
@@ -70,9 +70,9 @@ def image_preview(filename):
      example:
      http://<hostname>:<port>/images/<filename>.jpg"""
     try:
-        return send_from_directory('images', filename)
+        return send_from_directory('images', filename), 200
     except Exception:
-        return jsonify('Incorrect filename.')
+        return jsonify('Incorrect filename.'), 404
 
 
 if __name__ == '__main__':
