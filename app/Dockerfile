@@ -1,10 +1,11 @@
-FROM python:3.8.10
+FROM python:3.8-slim-buster
 
 COPY image_service /app
 
 WORKDIR app
 
 RUN pip3 install -r requirements.txt
+
 
 EXPOSE 5000
 

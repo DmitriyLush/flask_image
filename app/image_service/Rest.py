@@ -1,22 +1,13 @@
 from flask import Flask, request, send_from_directory, jsonify
+from werkzeug.utils import secure_filename
 from PIL import Image
 from io import BytesIO
 import os
 import time
 import base64
-import random
-import string
+
 
 app = Flask(__name__)
-
-
-def generate_random_name(length):
-    """В Image.save() необходим обязательный аргумент с сохраняемым именем файла, если его указать прямо,
-    то больше одной картинки сохранить невозможно. Для решения этой проблемы написана функция, генерирующая рандомные
-    имена."""
-    letters = string.ascii_lowercase
-    rand_string = ''.join(random.choice(letters) for i in range(length))
-    return rand_string
 
 
 @app.route('/')
@@ -28,9 +19,9 @@ def hello():
 def get_images_info():
     """Выводит список изображений в JSON формате который содержит имя файла, размер, время последнего изменения."""
     res = {}
-    for i in os.listdir('images'):
-        res[i] = [time.ctime(os.path.getmtime(os.path.abspath(os.path.join('images', i)))),
-                  str(os.stat(os.path.abspath(os.path.join('images', i))).st_size / 1024) + ' kilobytes']
+    for i in os.listdir('../../images'):
+        res[i] = [time.ctime(os.path.getmtime(os.path.abspath(os.path.join('../../images', i)))),
+                  str(os.stat(os.path.abspath(os.path.join('../../images', i))).st_size / 1024) + ' kilobytes']
     return jsonify(res), 200
 
 
@@ -44,11 +35,11 @@ def base64_upload():
         file = request.get_json()
         data = file.get('file')
         im = Image.open(BytesIO(base64.b64decode(data))).convert('RGB')
-        filename = generate_random_name(3) + '.jpg'
-        im.save(os.path.join('images', filename), 'JPEG')
+        filename = str(time.time())[:10] + '.jpg'
+        im.save(os.path.join('../../images', filename), 'JPEG')
         return jsonify(f"file {filename} added to 'images' folder"), 201
-    except Exception:
-        return jsonify('Incorrect JSON or base64 string.'), 400
+    except Exception as err:
+        return jsonify({'Something wrong!': str(err)})
 
 
 @app.route('/image', methods=['DELETE'])
@@ -57,11 +48,11 @@ def delete_image():
     example:
     http://<hostname>:<port>/image?filename=<filename>.jpg"""
     try:
-        filename = request.args.get('filename')
-        os.remove(os.path.join('images', filename))
+        filename = secure_filename(request.args.get('filename'))
+        os.remove(os.path.join('../../images', filename))
         return jsonify(f" file {filename} has been deleted"), 200
-    except Exception:
-        return jsonify('Incorrect filename in args.'), 404
+    except Exception as err:
+        return jsonify({'Something wrong!': str(err)}), 400
 
 
 @app.route('/images/<filename>', methods=['GET'])
@@ -70,9 +61,9 @@ def image_preview(filename):
      example:
      http://<hostname>:<port>/images/<filename>.jpg"""
     try:
-        return send_from_directory('images', filename), 200
-    except Exception:
-        return jsonify('Incorrect filename.'), 404
+        return send_from_directory('../../images', filename), 200
+    except Exception as err:
+        return jsonify({'Something wrong!': str(err)}), 404
 
 
 if __name__ == '__main__':
